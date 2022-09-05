@@ -97,6 +97,7 @@
         </p>
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+          
           <div
             v-for="(tick, idx) of paginatedTickers"
             :key="tick.name"
@@ -104,7 +105,9 @@
             :class="sel == tick ? 'border-4' : ''"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
-            <div class="px-4 py-5 sm:p-6 text-center">
+            <div 
+              :class="{ 'bg-red-100': !checkExist(tick.name)}"
+              class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
                 {{ tick.name.toUpperCase() }} - USD
               </dt>
@@ -186,6 +189,7 @@ export default {
       ticker: "",
       sel: null,
       graf: [],
+      bgcolor: 'bg-red-100',
       tickers: [],
       namesT: [],
       exist: false,
@@ -221,6 +225,7 @@ export default {
   computed: {
     start() {
       return (this.page - 1) * 6;
+      
     },
     end() {
       return this.page * 6;
@@ -261,8 +266,14 @@ export default {
         return price;
       }
       price = +price;
-      console.log(price);
       return price > 1 ? price.toFixed(2) : price.toPrecision(2);
+    },
+    checkExist(tickerName){
+      if (!this.coinNames.includes(tickerName)){
+        return false;
+      } else {
+        return true;
+      }
     },
     addClick() {
       const currentTicker = {
@@ -270,9 +281,9 @@ export default {
         price: "-",
       };
 
-      if (!this.namesT.includes(currentTicker.name.toUpperCase())) {
+      if (!this.namesT.includes(currentTicker.name)) {
         this.exist = false;
-        this.namesT.push(currentTicker.name.toUpperCase());
+        this.namesT.push(currentTicker.name);
         this.tickers = [...this.tickers, currentTicker];
         subscribeToTicker(currentTicker.name, (newPrice) => this.updateTicker(currentTicker.name, newPrice));
 
