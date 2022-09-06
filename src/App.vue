@@ -56,27 +56,12 @@
             </div>
           </div>
         </div>
-        <button
+        <add-button
           @click="addClick"
           v-on:keydown.enter="addClick"
           type="button"
-          class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-        >
-          <!-- Heroicon name: solid/mail -->
-          <svg
-            class="-ml-0.5 mr-2 h-6 w-6"
-            xmlns="http://www.w3.org/2000/svg"
-            width="30"
-            height="30"
-            viewBox="0 0 24 24"
-            fill="#ffffff"
-          >
-            <path
-              d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
-            ></path>
-          </svg>
-          Добавить
-        </button>
+          class="my-4"
+        />
       </section>
       <template v-if="tickers != 0">
         <p>
@@ -97,7 +82,6 @@
         </p>
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
-          
           <div
             v-for="(tick, idx) of paginatedTickers"
             :key="tick.name"
@@ -105,9 +89,10 @@
             :class="sel == tick ? 'border-4' : ''"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
-            <div 
-              :class="{ 'bg-red-100': !checkExist(tick.name)}"
-              class="px-4 py-5 sm:p-6 text-center">
+            <div
+              :class="{ 'bg-red-100': !checkExist(tick.name) }"
+              class="px-4 py-5 sm:p-6 text-center"
+            >
               <dt class="text-sm font-medium text-gray-500 truncate">
                 {{ tick.name.toUpperCase() }} - USD
               </dt>
@@ -142,7 +127,10 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ sel.name }}
         </h3>
-        <div class="flex items-end border-gray-600 border-b border-l h-64">
+        <div
+          class="flex items-end border-gray-600 border-b border-l h-64"
+          ref="graf"
+        >
           <div
             v-for="(bar, idx) of normalizeGraf"
             :key="idx"
@@ -180,16 +168,21 @@
 
 <script>
 import { subscribeToTicker, unSubscribeTicker } from "./api";
+import addButton from "./components/addButton.vue";
 
 export default {
   name: "App",
+
+  components: {
+    addButton,
+  },
 
   data() {
     return {
       ticker: "",
       sel: null,
       graf: [],
-      bgcolor: 'bg-red-100',
+      bgcolor: "bg-red-100",
       tickers: [],
       namesT: [],
       exist: false,
@@ -216,7 +209,8 @@ export default {
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
       this.tickers.forEach((ticker) => {
-        subscribeToTicker(ticker.name, (newPrice) => this.updateTicker(ticker.name, newPrice)
+        subscribeToTicker(ticker.name, (newPrice) =>
+          this.updateTicker(ticker.name, newPrice)
         );
       });
     }
@@ -225,7 +219,6 @@ export default {
   computed: {
     start() {
       return (this.page - 1) * 6;
-      
     },
     end() {
       return this.page * 6;
@@ -252,12 +245,16 @@ export default {
   },
   methods: {
     updateTicker(tickerName, price) {
+      //console.log('Update Ticker', this.$refs.graf)
       this.tickers
         .filter((t) => t.name === tickerName)
         .forEach((t) => {
           t.price = price;
-          if(t === this.sel){
+          if (t === this.sel) {
             this.graf.push(price);
+            if (this.graf.length > 150) {
+              this.graf.shift();
+            }
           }
         });
     },
@@ -268,8 +265,8 @@ export default {
       price = +price;
       return price > 1 ? price.toFixed(2) : price.toPrecision(2);
     },
-    checkExist(tickerName){
-      if (!this.coinNames.includes(tickerName)){
+    checkExist(tickerName) {
+      if (!this.coinNames.includes(tickerName)) {
         return false;
       } else {
         return true;
@@ -285,8 +282,9 @@ export default {
         this.exist = false;
         this.namesT.push(currentTicker.name);
         this.tickers = [...this.tickers, currentTicker];
-        subscribeToTicker(currentTicker.name, (newPrice) => this.updateTicker(currentTicker.name, newPrice));
-
+        subscribeToTicker(currentTicker.name, (newPrice) =>
+          this.updateTicker(currentTicker.name, newPrice)
+        );
       } else {
         console.log("This name already exist");
         this.exist = true;
@@ -300,7 +298,7 @@ export default {
       if (this.sel == ti) {
         this.sel = null;
       }
-      unSubscribeTicker(ti.name)
+      unSubscribeTicker(ti.name);
     },
     select(t) {
       this.sel = t;
@@ -365,4 +363,3 @@ export default {
   },
 };
 </script>
-
