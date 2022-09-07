@@ -21,48 +21,7 @@
       </svg>
     </div> -->
     <div class="container">
-      <section>
-        <div class="flex">
-          <div class="max-w-xs">
-            <label for="wallet" class="block text-sm font-medium text-gray-700"
-              >Тикер</label
-            >
-            <div class="mt-1 relative rounded-md shadow-md">
-              <input
-                v-model="ticker"
-                @keydown.enter="addClick($event)"
-                @input="getNames"
-                type="text"
-                name="wallet"
-                id="wallet"
-                class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
-                placeholder="Например DOGE"
-              />
-            </div>
-            <div
-              class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
-            >
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-                v-for="t of getNames().slice(0, 4)"
-                :key="t.name"
-                @click="pushName(t)"
-              >
-                {{ t }}
-              </span>
-            </div>
-            <div v-if="exist" class="text-sm text-red-600">
-              Такой тикер уже добавлен
-            </div>
-          </div>
-        </div>
-        <add-button
-          @click="addClick"
-          v-on:keydown.enter="addClick"
-          type="button"
-          class="my-4"
-        />
-      </section>
+      <add-ticker @get-name="getNames" @add-ticker='addClick' :gotName='getNames' :exist='exist'/>
       <template v-if="tickers != 0">
         <p>
           <button
@@ -123,58 +82,22 @@
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
-      <section class="relative" v-if="sel">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{ sel.name }}
-        </h3>
-        <div
-          class="flex items-end border-gray-600 border-b border-l h-64"
-          ref="graf"
-        >
-          <div
-            v-for="(bar, idx) of normalizeGraf"
-            :key="idx"
-            :style="{ height: `${bar}%` }"
-            class="bg-purple-800 border w-10"
-          ></div>
-        </div>
-        <button @click="sel = 0" type="button" class="absolute top-0 right-0">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            xmlns:xlink="http://www.w3.org/1999/xlink"
-            xmlns:svgjs="http://svgjs.com/svgjs"
-            version="1.1"
-            width="30"
-            height="30"
-            x="0"
-            y="0"
-            viewBox="0 0 511.76 511.76"
-            style="enable-background: new 0 0 512 512"
-            xml:space="preserve"
-          >
-            <g>
-              <path
-                d="M436.896,74.869c-99.84-99.819-262.208-99.819-362.048,0c-99.797,99.819-99.797,262.229,0,362.048    c49.92,49.899,115.477,74.837,181.035,74.837s131.093-24.939,181.013-74.837C536.715,337.099,536.715,174.688,436.896,74.869z     M361.461,331.317c8.341,8.341,8.341,21.824,0,30.165c-4.16,4.16-9.621,6.251-15.083,6.251c-5.461,0-10.923-2.091-15.083-6.251    l-75.413-75.435l-75.392,75.413c-4.181,4.16-9.643,6.251-15.083,6.251c-5.461,0-10.923-2.091-15.083-6.251    c-8.341-8.341-8.341-21.845,0-30.165l75.392-75.413l-75.413-75.413c-8.341-8.341-8.341-21.845,0-30.165    c8.32-8.341,21.824-8.341,30.165,0l75.413,75.413l75.413-75.413c8.341-8.341,21.824-8.341,30.165,0    c8.341,8.32,8.341,21.824,0,30.165l-75.413,75.413L361.461,331.317z"
-                fill="#718096"
-                data-original="#000000"
-              ></path>
-            </g>
-          </svg>
-        </button>
-      </section>
+      <graph-comp @selChange="sel = null" :sel="sel" :normalizeGraf='normalizeGraf'/>
     </div>
   </div>
 </template>
 
 <script>
 import { subscribeToTicker, unSubscribeTicker } from "./api";
-import addButton from "./components/addButton.vue";
+import addTicker from "./components/addTickers.vue";
+import graphComp from "./components/graphComp.vue";
 
 export default {
   name: "App",
 
   components: {
-    addButton,
+    graphComp,
+    addTicker
   },
 
   data() {
@@ -190,6 +113,7 @@ export default {
       coinNames: [],
       page: 1,
       filter: "",
+      filtName4: []
     };
   },
 
@@ -204,7 +128,10 @@ export default {
     if (windowData.page) {
       this.page = windowData.page;
     }
-
+    if (JSON.parse(localStorage.getItem('crypto-name-list')) !== null){
+      this.namesT = JSON.parse(localStorage.getItem('crypto-name-list'));
+    }
+    
     const tickersData = localStorage.getItem("crypto-list");
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
@@ -235,6 +162,8 @@ export default {
       return this.filteredTickers.length <= this.end;
     },
     normalizeGraf() {
+      console.log(this.sel);
+
       const maxValue = Math.max(...this.graf);
       const minValue = Math.min(...this.graf);
       if (maxValue === minValue) return this.graf.map(() => 50);
@@ -244,6 +173,7 @@ export default {
     },
   },
   methods: {
+
     updateTicker(tickerName, price) {
       //console.log('Update Ticker', this.$refs.graf)
       this.tickers
@@ -272,9 +202,9 @@ export default {
         return true;
       }
     },
-    addClick() {
+    addClick(ticker) {
       const currentTicker = {
-        name: this.ticker.toUpperCase(),
+        name: ticker.toUpperCase(),
         price: "-",
       };
 
@@ -289,7 +219,6 @@ export default {
         console.log("This name already exist");
         this.exist = true;
       }
-      this.ticker = "";
     },
     deleteUSD(ti) {
       this.tickers = this.tickers.filter((t) => t !== ti);
@@ -320,24 +249,23 @@ export default {
         })
         .catch(console.error);
     },
-    getNames() {
-      let filtred = this.coinNames.filter((filtered) =>
-        filtered.toUpperCase().startsWith(this.ticker.toUpperCase())
+    getNames(ticker) {
+       let filtered= this.coinNames.filter((filtered) =>
+        filtered.toUpperCase().startsWith(ticker.toUpperCase())
       );
-      return filtred;
+
+
+      return filtered.slice(0, 4);
     },
-    pushName(text) {
-      this.ticker = text;
-      this.addClick();
-    },
+
   },
   watch: {
     tickers() {
       localStorage.setItem("crypto-list", JSON.stringify(this.tickers));
       localStorage.setItem("crypto-name-list", JSON.stringify(this.namesT));
-      console.log("Add to localStorage");
     },
     sel() {
+      console.log('Проследил изменение')
       this.graf = [];
     },
     paginatedTickers() {
